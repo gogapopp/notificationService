@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -13,8 +15,9 @@ type (
 		MongoDB    MongoDB
 	}
 	HTTPServer struct {
-		Host string `env:"SERVER_HOST"`
-		Port string `env:"SERVER_PORT"`
+		Address     string        `env:"SERVER_ADDRESS"`
+		Timeout     time.Duration `env:"SERVER_TIMEOUT"`
+		IdleTimeout time.Duration `env:"SERVER_IDLE_TIMEOUT"`
 	}
 	RabbitMQ struct {
 		Host     string `env:"RABBITMQ_HOST"`
