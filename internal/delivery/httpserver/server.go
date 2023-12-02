@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gogapopp/notificationService/internal/models"
@@ -13,6 +14,7 @@ import (
 type Service interface {
 	Ping(ctx context.Context) error
 	InsertMessage(ctx context.Context, msg models.Message) error
+	Subscribe(ctx context.Context, user models.UserSub) error
 }
 
 type Handler struct {
@@ -20,23 +22,21 @@ type Handler struct {
 	log     *zap.SugaredLogger
 }
 
-func NewHandler(service *service.Service, logger *zap.SugaredLogger) *Handler {
+func NewHandler(service Service, logger *zap.SugaredLogger) *Handler {
 	return &Handler{service: service, log: logger}
 }
 
 func (h *Handler) Health(c echo.Context) error {
-	h.log.Info(c.Path())
 	ctx := c.Request().Context()
 	err := h.service.Ping(ctx)
 	if err != nil {
 		h.log.Error(err)
-		return c.String(http.StatusServiceUnavailable, "DB: fail!")
+		return c.String(http.StatusServiceUnavailable, "fail!")
 	}
-	return c.String(http.StatusOK, "DB: pong!")
+	return c.String(http.StatusOK, "success!")
 }
 
 func (h *Handler) Message(c echo.Context) error {
-	h.log.Info(c.Path())
 	ctx := c.Request().Context()
 	var msg models.Message
 	if err := c.Bind(&msg); err != nil {
@@ -46,7 +46,10 @@ func (h *Handler) Message(c echo.Context) error {
 	err := h.service.InsertMessage(ctx, msg)
 	if err != nil {
 		h.log.Error(err)
-		return c.String(http.StatusInternalServerError, "failed insert to the DB")
+		if errors.Is(err, service.ErrEmptyField) {
+			return c.String(http.StatusBadRequest, "invalid input")
+		}
+		return c.String(http.StatusInternalServerError, "something went wrong")
 	}
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "success",
@@ -54,11 +57,25 @@ func (h *Handler) Message(c echo.Context) error {
 }
 
 func (h *Handler) Subscribe(c echo.Context) error {
-	h.log.Info(c.Path())
-	return nil
+	ctx := c.Request().Context()
+	var userSub models.UserSub
+	if err := c.Bind(&userSub); err != nil {
+		h.log.Error(err)
+		return c.String(http.StatusBadRequest, "invalid input")
+	}
+	err := h.service.Subscribe(ctx, userSub)
+	if err != nil {
+		h.log.Error(err)
+		if errors.Is(err, service.ErrEmptyField) {
+			return c.String(http.StatusBadRequest, "invalid input")
+		}
+		return c.String(http.StatusInternalServerError, "something went wrong")
+	}
+	return c.JSON(http.StatusOK, map[string]string{
+		"status": "success",
+	})
 }
 
 func (h *Handler) Unsubscribe(c echo.Context) error {
-	h.log.Info(c.Path())
 	return nil
 }

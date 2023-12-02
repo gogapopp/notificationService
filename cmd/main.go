@@ -14,21 +14,23 @@ import (
 	"github.com/gogapopp/notificationService/internal/repository/mongodb"
 	"github.com/gogapopp/notificationService/internal/service"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	logger, err := logger.NewLogger()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	config, err := config.NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	db, err := mongodb.NewMongoDB(config)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer func() {
 		if err := db.Client.Disconnect(ctx); err != nil {
@@ -39,20 +41,25 @@ func main() {
 	handler := httpserver.NewHandler(service, logger)
 
 	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.GET("/health", handler.Health)
+	e.POST("/message", handler.Message)
 	e.POST("/subscribe", handler.Subscribe)
 	e.POST("/unsubscribe", handler.Unsubscribe)
-	e.POST("/message", handler.Message)
-	e.GET("/health", handler.Health)
 	s := http.Server{
-		Addr:         config.HTTPServer.Address,
 		Handler:      e,
+		Addr:         config.HTTPServer.Address,
 		ReadTimeout:  config.HTTPServer.Timeout,
 		WriteTimeout: config.HTTPServer.Timeout,
 		IdleTimeout:  config.HTTPServer.IdleTimeout,
 	}
-	if err := s.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatal(err)
-	}
+	go func() {
+		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+	logger.Infof("server is running at %s address", config.HTTPServer.Address)
 
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)

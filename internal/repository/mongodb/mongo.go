@@ -3,7 +3,6 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/gogapopp/notificationService/internal/config"
 	"github.com/gogapopp/notificationService/internal/models"
@@ -12,7 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const mongodbName = "mongodb"
+const (
+	mongodbName        = "mongodb"
+	collectionMessages = "messages"
+	collectionUsers    = "users"
+)
 
 type DB struct {
 	Client *mongo.Client
@@ -20,11 +23,12 @@ type DB struct {
 
 func NewMongoDB(config *config.Config) (*DB, error) {
 	uri := fmt.Sprintf("mongodb://%s:%s@%s:%s", config.MongoDB.User, config.MongoDB.Password, config.MongoDB.Host, config.MongoDB.Port)
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
+	ctx := context.Background()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err
 	}
-	return &DB{Client: client}, nil
+	return &DB{Client: client}, client.Ping(ctx, nil)
 }
 
 func (d *DB) Ping(ctx context.Context) error {
@@ -32,11 +36,20 @@ func (d *DB) Ping(ctx context.Context) error {
 }
 
 func (d *DB) InsertMessage(ctx context.Context, msg models.Message) error {
-	collection := d.Client.Database(mongodbName).Collection("messages")
+	collection := d.Client.Database(mongodbName).Collection(collectionMessages)
 	_, err := collection.InsertOne(ctx, bson.M{
 		"user_id":   msg.UserID,
 		"message":   msg.Message,
-		"timestamp": time.Now(),
+		"timestamp": msg.Timestamp,
+	})
+	return err
+}
+
+func (d *DB) Subscribe(ctx context.Context, userSub models.UserSub) error {
+	collection := d.Client.Database(mongodbName).Collection(collectionUsers)
+	_, err := collection.InsertOne(ctx, bson.M{
+		"user_id": userSub.UserID,
+		"email":   userSub.Email,
 	})
 	return err
 }

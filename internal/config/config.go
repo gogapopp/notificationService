@@ -30,7 +30,6 @@ type (
 		Host     string `env:"MONGODB_HOST"`
 		User     string `env:"MONGODB_USER"`
 		Password string `env:"MONGODB_PASSWORD"`
-		Name     string `env:"MONGODB_NAME"`
 		Port     string `env:"MONGODB_PORT"`
 	}
 )
@@ -39,7 +38,7 @@ func NewConfig() (*Config, error) {
 	var cfg Config
 	err := cleanenv.ReadConfig(configPath, &cfg)
 	if err != nil {
-		return &Config{}, err
+		return nil, err
 	}
 	return &cfg, nil
 }
