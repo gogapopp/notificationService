@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gogapopp/notificationService/internal/models"
+	"github.com/gogapopp/notificationService/internal/repository"
 	"github.com/gogapopp/notificationService/internal/service"
 	"github.com/labstack/echo"
 	"go.uber.org/zap"
@@ -15,6 +16,7 @@ type Service interface {
 	Ping(ctx context.Context) error
 	InsertMessage(ctx context.Context, msg models.Message) error
 	Subscribe(ctx context.Context, user models.UserSub) error
+	Unsubscribe(ctx context.Context, userUnSub models.UserUnSub) error
 }
 
 type Handler struct {
@@ -33,7 +35,7 @@ func (h *Handler) Health(c echo.Context) error {
 		h.log.Error(err)
 		return c.String(http.StatusServiceUnavailable, "fail!")
 	}
-	return c.String(http.StatusOK, "success!")
+	return c.String(http.StatusOK, "health: success!")
 }
 
 func (h *Handler) Message(c echo.Context) error {
@@ -52,7 +54,7 @@ func (h *Handler) Message(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "something went wrong")
 	}
 	return c.JSON(http.StatusOK, map[string]string{
-		"status": "success",
+		"status": "message: success",
 	})
 }
 
@@ -66,16 +68,40 @@ func (h *Handler) Subscribe(c echo.Context) error {
 	err := h.service.Subscribe(ctx, userSub)
 	if err != nil {
 		h.log.Error(err)
+		// validate error
 		if errors.Is(err, service.ErrEmptyField) {
 			return c.String(http.StatusBadRequest, "invalid input")
+		}
+		if errors.Is(err, repository.ErrUserAlreadySubscribed) {
+			return c.String(http.StatusBadRequest, "user already subscribed")
 		}
 		return c.String(http.StatusInternalServerError, "something went wrong")
 	}
 	return c.JSON(http.StatusOK, map[string]string{
-		"status": "success",
+		"status": "subscribe: success",
 	})
 }
 
 func (h *Handler) Unsubscribe(c echo.Context) error {
-	return nil
+	ctx := c.Request().Context()
+	var userUnSub models.UserUnSub
+	if err := c.Bind(&userUnSub); err != nil {
+		h.log.Error(err)
+		return c.String(http.StatusBadRequest, "invalid input")
+	}
+	err := h.service.Unsubscribe(ctx, userUnSub)
+	if err != nil {
+		h.log.Error(err)
+		// validate error
+		if errors.Is(err, service.ErrEmptyField) {
+			return c.String(http.StatusBadRequest, "invalid input")
+		}
+		if errors.Is(err, repository.ErrUserNotExists) {
+			return c.String(http.StatusBadRequest, "user doesn't exists")
+		}
+		return c.String(http.StatusInternalServerError, "something went wrong")
+	}
+	return c.JSON(http.StatusOK, map[string]string{
+		"status": "unsubscribe: success",
+	})
 }

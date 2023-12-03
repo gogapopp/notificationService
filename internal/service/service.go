@@ -16,6 +16,7 @@ type Repository interface {
 	Ping(ctx context.Context) error
 	InsertMessage(ctx context.Context, msg models.Message) error
 	Subscribe(ctx context.Context, user models.UserSub) error
+	Unsubscribe(ctx context.Context, userUnSub models.UserUnSub) error
 }
 
 type Service struct {
@@ -51,4 +52,12 @@ func (s *Service) Subscribe(ctx context.Context, userSub models.UserSub) error {
 		return ErrEmptyField
 	}
 	return s.repo.Subscribe(ctx, userSub)
+}
+
+func (s *Service) Unsubscribe(ctx context.Context, userUnSub models.UserUnSub) error {
+	err := s.validate.Struct(userUnSub)
+	if err != nil {
+		return ErrEmptyField
+	}
+	return s.repo.Unsubscribe(ctx, userUnSub)
 }

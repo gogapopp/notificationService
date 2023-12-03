@@ -12,3 +12,7 @@ type UserSub struct {
 	UserID string `json:"user_id" bson:"user_id" validate:"required"`
 	Email  string `json:"email" bson:"email" validate:"required,email"`
 }
+
+type UserUnSub struct {
+	UserID string `json:"user_id" bson:"user_id" validate:"required"`
+}
