@@ -66,7 +66,7 @@ func (d *DB) Subscribe(ctx context.Context, userSub models.UserSub) error {
 
 func (d *DB) Unsubscribe(ctx context.Context, userUnSub models.UserUnSub) error {
 	collection := d.Client.Database(mongodbName).Collection(collectionUsers)
-	err := collection.FindOne(ctx, bson.M{"user_id": userUnSub.UserID}).Err()
+	err := collection.FindOneAndDelete(ctx, bson.M{"user_id": userUnSub.UserID}).Err()
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return repository.ErrUserNotExists
@@ -74,6 +74,26 @@ func (d *DB) Unsubscribe(ctx context.Context, userUnSub models.UserUnSub) error 
 		// any internal db error in time when we are trying find a user
 		return err
 	}
-	_, err = collection.DeleteOne(ctx, bson.M{"user_id": userUnSub.UserID})
 	return err
+}
+
+func (d *DB) GetSubscribedUsers(ctx context.Context) ([]models.UserSub, error) {
+	var users []models.UserSub
+	collection := d.Client.Database(mongodbName).Collection(collectionUsers)
+	cur, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return []models.UserSub{}, err
+	}
+	defer cur.Close(ctx)
+
+	for cur.Next(ctx) {
+		var user models.UserSub
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
 }

@@ -53,9 +53,7 @@ func (h *Handler) Message(c echo.Context) error {
 		}
 		return c.String(http.StatusInternalServerError, "something went wrong")
 	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"status": "message: success",
-	})
+	return c.String(http.StatusOK, "message: success")
 }
 
 func (h *Handler) Subscribe(c echo.Context) error {
@@ -77,9 +75,7 @@ func (h *Handler) Subscribe(c echo.Context) error {
 		}
 		return c.String(http.StatusInternalServerError, "something went wrong")
 	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"status": "subscribe: success",
-	})
+	return c.String(http.StatusOK, "subscribe: success")
 }
 
 func (h *Handler) Unsubscribe(c echo.Context) error {
@@ -101,7 +97,5 @@ func (h *Handler) Unsubscribe(c echo.Context) error {
 		}
 		return c.String(http.StatusInternalServerError, "something went wrong")
 	}
-	return c.JSON(http.StatusOK, map[string]string{
-		"status": "unsubscribe: success",
-	})
+	return c.String(http.StatusOK, "unsubscribe: success")
 }

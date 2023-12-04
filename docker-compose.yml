@@ -13,6 +13,20 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+      - rabbitmq
+
+  rabbitmq:
+   image: rabbitmq:3
+   container_name: rabbitmq
+   restart: unless-stopped
+   environment:
+     RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+     RABBITMQ_DEFAULT_VHOST: /
+   ports:
+     - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+   networks:
+     - application
 
   mongodb:
     image: mongo:latest

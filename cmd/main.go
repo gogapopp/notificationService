@@ -10,34 +10,48 @@ import (
 
 	"github.com/gogapopp/notificationService/internal/config"
 	"github.com/gogapopp/notificationService/internal/delivery/httpserver"
+	"github.com/gogapopp/notificationService/internal/delivery/rabbitmq"
 	"github.com/gogapopp/notificationService/internal/logger"
 	"github.com/gogapopp/notificationService/internal/repository/mongodb"
 	"github.com/gogapopp/notificationService/internal/service"
+	"github.com/gogapopp/notificationService/internal/service/email"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
+
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	logger, err := logger.NewLogger()
-	if err != nil {
-		logger.Fatal(err)
-	}
+	fatal(err)
 	config, err := config.NewConfig()
-	if err != nil {
-		logger.Fatal(err)
-	}
+	fatal(err)
 	db, err := mongodb.NewMongoDB(config)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	fatal(err)
 	defer func() {
 		if err := db.Client.Disconnect(ctx); err != nil {
-			log.Fatal(err)
+			fatal(err)
 		}
 	}()
-	service := service.NewService(db, logger)
+	rabbitmqConnection, err := rabbitmq.NewRabbitMQ(config)
+	fatal(err)
+	defer func() {
+		if err := rabbitmqConnection.Close(); err != nil {
+			fatal(err)
+		}
+	}()
+	publisher, err := rabbitmq.NewPublisher(rabbitmqConnection, config)
+	fatal(err)
+	consumer, err := rabbitmq.NewConsumer(rabbitmqConnection, config)
+	fatal(err)
+	service := service.NewService(db, publisher, logger)
+	mailService := email.NewMailService(db, logger)
 	handler := httpserver.NewHandler(service, logger)
 
 	e := echo.New()
@@ -56,15 +70,20 @@ func main() {
 	}
 	go func() {
 		if err := s.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatal(err)
+			fatal(err)
 		}
 	}()
 	logger.Infof("server is running at %s address", config.HTTPServer.Address)
+	go func() {
+		if err := consumer.ConsumeMessages(mailService.SendEMails); err != nil {
+			fatal(err)
+		}
+	}()
 
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	<-sigint
 	if err := s.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 }

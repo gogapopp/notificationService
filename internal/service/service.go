@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gogapopp/notificationService/internal/delivery/rabbitmq"
 	"github.com/gogapopp/notificationService/internal/models"
 	"go.uber.org/zap"
 )
@@ -20,16 +22,18 @@ type Repository interface {
 }
 
 type Service struct {
-	repo     Repository
-	validate *validator.Validate
-	log      *zap.SugaredLogger
+	repo      Repository
+	validate  *validator.Validate
+	publisher *rabbitmq.Publisher
+	log       *zap.SugaredLogger
 }
 
-func NewService(repository Repository, log *zap.SugaredLogger) *Service {
+func NewService(repository Repository, publisher *rabbitmq.Publisher, log *zap.SugaredLogger) *Service {
 	return &Service{
-		repo:     repository,
-		validate: validator.New(),
-		log:      log,
+		repo:      repository,
+		validate:  validator.New(),
+		publisher: publisher,
+		log:       log,
 	}
 }
 
@@ -43,7 +47,19 @@ func (s *Service) InsertMessage(ctx context.Context, msg models.Message) error {
 		return ErrEmptyField
 	}
 	msg.Timestamp = time.Now()
-	return s.repo.InsertMessage(ctx, msg)
+	err = s.repo.InsertMessage(ctx, msg)
+	if err != nil {
+		return err
+	}
+	msgBytes, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	err = s.publisher.PublishMessage(msgBytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) Subscribe(ctx context.Context, userSub models.UserSub) error {
