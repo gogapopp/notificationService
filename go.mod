@@ -6,6 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/labstack/echo v3.3.10+incompatible
+	github.com/streadway/amqp v1.1.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.13.0
 	go.uber.org/zap v1.26.0
@@ -27,7 +28,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/streadway/amqp v1.1.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

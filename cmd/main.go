@@ -51,7 +51,7 @@ func main() {
 	consumer, err := rabbitmq.NewConsumer(rabbitmqConnection, config)
 	fatal(err)
 	service := service.NewService(db, publisher, logger)
-	mailService := email.NewMailService(db, logger)
+	mailService := email.NewMailService(db, config, logger)
 	handler := httpserver.NewHandler(service, logger)
 
 	e := echo.New()

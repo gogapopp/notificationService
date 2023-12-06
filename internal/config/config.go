@@ -13,6 +13,7 @@ type (
 		HTTPServer HTTPServer
 		RabbitMQ   RabbitMQ
 		MongoDB    MongoDB
+		SMTP       SMTP
 	}
 	HTTPServer struct {
 		Address     string        `env:"SERVER_ADDRESS"`
@@ -31,6 +32,12 @@ type (
 		User     string `env:"MONGODB_USER"`
 		Password string `env:"MONGODB_PASSWORD"`
 		Port     string `env:"MONGODB_PORT"`
+	}
+	SMTP struct {
+		Login    string `env:"SMTP_LOGIN"`
+		Password string `env:"SMTP_PASSWORD"`
+		Provider string `env:"SMTP_PROVIDER"`
+		Port     string `env:"SMTP_PORT"`
 	}
 )
 
