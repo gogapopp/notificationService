@@ -49,8 +49,8 @@ func (m *MailService) SendEMails(msgBytes []byte) {
 }
 
 func (m *MailService) sendEmail(to string, msg models.Message) error {
-	subject := "Subject: Hello there\n"
 	addr := fmt.Sprintf("%s:%s", m.config.SMTP.Provider, m.config.SMTP.Port)
+	subject := "Subject: Hello\n"
 	body := fmt.Sprintf("To: %s\r\n%s\r\n%s", to, subject, msg.Message)
 	err := smtp.SendMail(addr, m.auth, m.config.SMTP.Login, []string{to}, []byte(body))
 	return err
