@@ -11,6 +11,15 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type MockPublisher struct {
+	mock.Mock
+}
+
+func (m *MockPublisher) PublishMessage(msg []byte) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
 // success cases
 func TestPing(t *testing.T) {
 	repo := mocks.NewMockRepositroy()
@@ -23,12 +32,14 @@ func TestPing(t *testing.T) {
 
 func TestInsertMessage(t *testing.T) {
 	repo := mocks.NewMockRepositroy()
-	service := NewService(repo, nil, nil)
+	publisher := new(MockPublisher)
+	service := NewService(repo, publisher, nil)
 	msg := models.Message{
 		UserID:    "1",
 		Message:   "test message",
 		Timestamp: time.Now(),
 	}
+	publisher.On("PublishMessage", mock.Anything).Return(nil)
 	repo.On("InsertMessage", mock.Anything, msg).Return(nil)
 	err := service.InsertMessage(context.Background(), msg)
 	repo.AssertCalled(t, "InsertMessage", mock.Anything, msg)

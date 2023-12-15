@@ -22,8 +22,7 @@ type MailService struct {
 	log    *zap.SugaredLogger
 }
 
-func NewMailService(repo repository, config *config.Config, log *zap.SugaredLogger) *MailService {
-	emailAuth := smtp.PlainAuth("", config.SMTP.Login, config.SMTP.Password, config.SMTP.Provider)
+func NewMailService(repo repository, config *config.Config, emailAuth smtp.Auth, log *zap.SugaredLogger) *MailService {
 	return &MailService{repo: repo, config: config, auth: emailAuth, log: log}
 }
 

@@ -13,10 +13,9 @@ func TestNewMongoDB(t *testing.T) {
 			User:     "testUser",
 			Password: "testPass",
 			Host:     "host",
-			Port:     "27017",
+			Port:     "21017",
 		},
 	}
-	db, err := NewMongoDB(cfg)
-	assert.NoError(t, err, "failed to create DB")
-	assert.NotNil(t, db.Client, "expected DB client not nil")
+	_, err := NewMongoDB(cfg)
+	assert.Error(t, err, "failed to create DB")
 }

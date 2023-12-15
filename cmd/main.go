@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/smtp"
 	"os"
 	"os/signal"
 	"syscall"
@@ -51,7 +52,8 @@ func main() {
 	consumer, err := rabbitmq.NewConsumer(rabbitmqConnection, config)
 	fatal(err)
 	service := service.NewService(db, publisher, logger)
-	mailService := email.NewMailService(db, config, logger)
+	emailAuth := smtp.PlainAuth("", config.SMTP.Login, config.SMTP.Password, config.SMTP.Provider)
+	mailService := email.NewMailService(db, config, emailAuth, logger)
 	handler := httpserver.NewHandler(service, logger)
 
 	e := echo.New()

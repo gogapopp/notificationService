@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gogapopp/notificationService/internal/delivery/rabbitmq"
 	"github.com/gogapopp/notificationService/internal/models"
 	"go.uber.org/zap"
 )
@@ -21,14 +20,18 @@ type Repository interface {
 	Unsubscribe(ctx context.Context, userUnSub models.UserUnSub) error
 }
 
+type Publisher interface {
+	PublishMessage(body []byte) error
+}
+
 type Service struct {
 	repo      Repository
 	validate  *validator.Validate
-	publisher *rabbitmq.Publisher
+	publisher Publisher
 	log       *zap.SugaredLogger
 }
 
-func NewService(repository Repository, publisher *rabbitmq.Publisher, log *zap.SugaredLogger) *Service {
+func NewService(repository Repository, publisher Publisher, log *zap.SugaredLogger) *Service {
 	return &Service{
 		repo:      repository,
 		validate:  validator.New(),
